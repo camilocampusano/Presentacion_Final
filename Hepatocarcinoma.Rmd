@@ -1,0 +1,164 @@
+---
+title: "Hepatocarcinoma"
+author: "Camilo Campusano"
+date: "`r format(Sys.time(), '%d/%m, %Y')`"
+output:
+  ioslides_presentation:
+    incremental: yes
+    logo: puc_logo.jpg
+    widescreen: yes
+  slidy_presentation:
+    incremental: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(kableExtra)
+options("kableExtra.html.bsTable" = T)
+
+library(tidyverse)
+library(ggplot2)
+library(knitr)
+library(rmarkdown)
+library(stargazer)
+library(readr)
+library(broom)
+```
+
+## INTRODUCCIÓN
+![](/Users/camilocampusano/Documents/2do Semestre/R/GitHub Proyect/Trabajo_Final_CCampusano/hcc-dataset/FIG 01.png)
+
+- El HCC es el 5to más frecuente
+- El 2do más mortal
+- Incidencia: 854.000 casos/año
+- Mortalidad: 810.000 muertes/año
+
+## ETIOLOGÍA
+![](/Users/camilocampusano/Documents/2do Semestre/R/GitHub Proyect/Trabajo_Final_CCampusano/hcc-dataset/FIG 02.png) 
+
+===
+- Relación con:
+  - HBV
+  - HCV
+  - Síndrome Metabólico (cirrhosis por NASH)
+  - Cirrhosis Alcoholica
+  - HIV
+- Prevención
+  - Vacunación contra HBV
+
+## BASE DE DATOS
+```{r}
+hcc_data_complete_balanced <- read_csv("hcc-dataset/hcc-data-complete-balanced.csv", 
+                                       col_types = cols(AFP = col_number(), 
+                                                        AHT = col_logical(), 
+                                                        ALP = col_number(), 
+                                                        ALT = col_number(), 
+                                                        AST = col_number(), 
+                                                        Age = col_number(), 
+                                                        Alcohol = col_logical(), 
+                                                        CRI = col_logical(), 
+                                                        Cirrhosis = col_logical(), 
+                                                        Class = col_logical(), 
+                                                        Creatinine = col_number(), 
+                                                        Diabetes = col_logical(), 
+                                                        Dir_Bil = col_number(),
+                                                        Endemic = col_logical(), 
+                                                        Ferritin = col_number(),
+                                                        GGT = col_number(), 
+                                                        Gender = col_logical(),
+                                                        Grams_day = col_number(), 
+                                                        HBcAb = col_logical(),
+                                                        HBeAg = col_logical(), 
+                                                        HBsAg = col_logical(),
+                                                        HCVAb = col_logical(), 
+                                                        HIV = col_logical(),
+                                                        Hallmark = col_logical(), 
+                                                        Hemochro = col_logical(),
+                                                        INR = col_number(), 
+                                                        Iron = col_number(),
+                                                        Major_Dim = col_number(), 
+                                                        Metastasis = col_logical(),
+                                                        NASH = col_logical(), 
+                                                        Nodule = col_number(),
+                                                        Obesity = col_logical(),
+                                                        PHT = col_logical(),
+                                                        PVT = col_logical(), 
+                                                        Packs_year = col_number(),
+                                                        Sat = col_number(), 
+                                                        Smoking = col_logical(),
+                                                        Spleno = col_logical(), 
+                                                        Symptoms = col_logical(),
+                                                        TP = col_number(), 
+                                                        Total_Bil = col_number(),
+                                                        Varices = col_logical()))
+
+hcc_fil <- hcc_data_complete_balanced %>% dplyr::select(Gender, Symptoms, HBsAg, HBeAg, HCVAb, Alcohol, HIV, Obesity, Diabetes, NASH, Smoking, Cirrhosis, PHT, PVT, Metastasis, ALT, AST, GGT, ALP, Creatinine, Dir_Bil, Total_Bil, Albumin, INR, Platelets)
+
+```
+
+
+```{r, echo = FALSE}
+kable(cbind(hcc_fil), caption = "Tabla 1. Primer filtro", digits = 0.5) %>%
+  kable_styling() %>%
+  scroll_box(width = "1200px", height = "350px")
+```
+
+## BUSCANDO SIGNIFICANCIA
+Alcohol
+
+```{r, echo = FALSE}
+alcohol_n <- hcc_fil %>% count(Alcohol)
+ggplot(alcohol_n, aes(x = Alcohol, y= n)) +
+  geom_bar(stat = "identity") +
+  scale_fill_gradientn(colours = terrain.colors(6))
+```
+
+## BUSCANDO SIGNIFICANCIA 02
+Sintomatología
+```{r, echo = FALSE}
+sintomas_n <- hcc_fil %>% count(Symptoms)
+ggplot(sintomas_n, aes(x = Symptoms, y= n)) +
+  geom_bar(stat = "identity") +
+  scale_fill_gradientn(colours = terrain.colors(6))
+```
+
+## SIGNIFICANCIA CLÍNICA
+
+```{r, echo = FALSE}
+SA <- hcc_fil %>% filter(Alcohol == "TRUE", Symptoms == "TRUE", GGT > 100, ALT > 100, AST > 100)
+kable(cbind(SA), caption = "Tabla 2. Signicancia Clínica", digits = 0.5) %>%
+  kable_styling() %>%
+  scroll_box(width = "1200px", height = "350px")
+```
+
+## ESTADÍGRAFOS
+```{r, Echo = FALSE}
+formula <- lm(GGT ~ I(ALT^2), data = SA)
+```
+
+```{r, Echo = TRUE}
+summary(formula)
+```
+
+## ESTADÍGRAFOS 02
+
+```{r, Echo = TRUE}
+glance(formula)
+```
+
+## FINALMENTE
+```{r, Echo = FALSE}
+ggplot(hcc_fil, aes(x= ALT + AST, y=GGT)) +
+  geom_path(aes(group = GGT, color = Symptoms)) +
+  geom_point(aes(color = Symptoms)) +
+  theme_classic()
+```
+
+## A SEGUIR TRABAJANDO
+```{r, Echo = FALSE}
+ggplot(SA, aes(x= GGT, y= ALT)) +
+  geom_path(aes(group = GGT, color = Symptoms)) +
+  geom_point(aes(color = Symptoms)) +
+  theme_classic()
+```
+
